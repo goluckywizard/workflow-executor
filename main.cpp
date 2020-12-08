@@ -16,11 +16,9 @@ public:
     virtual void execute(std::vector<std::string> &Text) override {
         std::ifstream input;
         input.open(input_txt);
-        //std::cout << input_txt;
         std::string str;
         while (std::getline(input, str))
         {
-
             Text.push_back(str);
         }
         input.close();
@@ -43,19 +41,29 @@ public:
     }
 };
 class Greper : public Executor {
+    std::string fword;
 public:
     Greper(const std::string word) {
-
+        fword = word;
     }
     virtual void execute(std::vector<std::string> &Text) override {
-
+        auto iter = Text.begin();
+        while(iter!=Text.end()) {
+            std::regex expression("(^|\\s)" + fword + "(\\s|$)");
+            std::sregex_token_iterator first(iter->begin(), iter->end(), expression);
+            std::sregex_token_iterator last;
+            //std::cout << iter << " " << std::endl;
+            if (std::distance(first, last) == 0) {
+                iter = Text.erase(iter);
+            }
+            else
+                ++iter;
+        }
     }
 };
 class Sorter : public Executor {
 public:
-    Sorter (){
-        //output.open(filename);
-    }
+    Sorter (){}
     virtual void execute(std::vector<std::string> &Text) override {
         std::sort(Text.begin(), Text.end());
     }
