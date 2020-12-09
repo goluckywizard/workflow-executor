@@ -48,8 +48,8 @@ public:
     }
     virtual void execute(std::vector<std::string> &Text) override {
         auto iter = Text.begin();
-        while(iter!=Text.end()) {
-            std::regex expression("(^|\\s)" + fword + "(\\s|$)");
+        while (iter != Text.end()) {
+            std::regex expression("\\b"+fword+"\\b");
             std::sregex_token_iterator first(iter->begin(), iter->end(), expression);
             std::sregex_token_iterator last;
             //std::cout << iter << " " << std::endl;
@@ -69,12 +69,21 @@ public:
     }
 };
 class Replacer : public Executor {
+    std::string old_word;
+    std::string new_word;
 public:
     Replacer(const std::string word1, const std::string word2) {
-        //output.open(filename);
+        old_word = word1;
+        new_word = word2;
     }
     virtual void execute(std::vector<std::string> &Text) override {
-
+        static const std::regex space_extractor("\\b"+old_word+"\\b");
+        auto iter = Text.begin();
+        while (iter != Text.end()) {
+            std::string str = *iter;
+            *iter = std::regex_replace(*iter, space_extractor, new_word);
+            ++iter;
+        }
     }
 };
 class Dumper : public Executor {
@@ -136,7 +145,6 @@ public:
                 {
                     std::string qwe = i -> str();
                     block_number = std::atoi(qwe.c_str());
-                    //std:: cout << block_number;
                     iteration++;
                 } else if (iteration == 1) {
                     std::string str = i->str();
