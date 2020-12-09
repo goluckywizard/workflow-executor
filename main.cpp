@@ -3,6 +3,7 @@
 #include <regex>
 #include <string>
 #include <list>
+#include <iterator>
 class Executor {
 public:
     virtual void execute(std::vector<std::string> &Text){}
@@ -75,12 +76,14 @@ public:
     Replacer(const std::string word1, const std::string word2) {
         old_word = word1;
         new_word = word2;
+        //std::cout << "constr:" << word1 << "," << word2 << std::endl;
     }
     virtual void execute(std::vector<std::string> &Text) override {
-        static const std::regex space_extractor("\\b"+old_word+"\\b");
+        const std::regex space_extractor("\\b"+old_word+"\\b");
         auto iter = Text.begin();
         while (iter != Text.end()) {
-            std::string str = *iter;
+            //std::cout << "old_word:" << old_word << " new_word:" << new_word << "\\\\\\\\";
+            //auto newstr_begin = std::sregex_iterator(iter->begin(), iter->end(), space_extractor);
             *iter = std::regex_replace(*iter, space_extractor, new_word);
             ++iter;
         }
@@ -119,8 +122,11 @@ Executor* create_block(char type, std::string &par1, std::string par2 = nullptr)
     } else
         return new Executor;
 }
-
 class Workflow_Parser {
+    struct Block {
+        int index;
+        Executor* block_n;
+    };
 public:
     Workflow_Parser(char *in) {
         //std::cout << in;
@@ -172,24 +178,43 @@ public:
                 //std::cout << iteration << i -> str() << std::endl;
             }
             //std::cout << par1 << par2;
-            blocks.push_back(create_block(type, par1, par2));
+            Block b{};
+            b.index = block_number;
+            b.block_n = create_block(type, par1, par2);
+            auto iter = blocks.begin();
+            while (iter != blocks.end() && iter->index < b.index)
+            {
+                ++iter;
+            }
+            if (iter == blocks.begin()) {
+                blocks.push_back(b);
+            }
+            else {
+                blocks.insert(iter, b);
+            }
         }
         std::vector<std::string> Text;
-        for (auto it : blocks) {
-            it->execute(Text);
-            //std::cout << Text.size();
-        }
-        /*while (std::getline(input, new_str)) { //определенный порядок
+        while (std::getline(input, new_str)) { //определенный порядок
             static const std::regex to_extractor("[\\d]+");
             auto numbers_begin = std::sregex_iterator(new_str.begin(), new_str.end(), to_extractor);
             for (auto i = numbers_begin; i != std::sregex_iterator(); ++i) {
-
+                std::string id_number = i->str();
+                int id = std::atoi(id_number.c_str());
+                auto block_iter = blocks.begin();
+                while (block_iter != blocks.end()) {
+                    if (block_iter->index == id) {
+                        //std::cout << id;
+                        block_iter->block_n->execute(Text);
+                        break;
+                    }
+                    ++block_iter;
+                }
             }
-        }*/
+        }
     }
 
 private:
-    std::list<Executor*> blocks;
+    std::list<Block> blocks;
 };
 
 int main(int argc, char* argv[]) {
