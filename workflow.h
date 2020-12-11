@@ -6,6 +6,8 @@
 #include <string>
 #include <list>
 #include <optional>
+#include <memory>
+#include <map>
 class Executor {
 public:
     virtual void execute(std::optional<std::vector<std::string>> &Text){}
@@ -53,15 +55,11 @@ public:
     void execute(std::optional<std::vector<std::string>> &Text) override;
 };
 
-Executor* create_block(char type, std::string &par1, std::string par2 = nullptr);
+std::unique_ptr <Executor> create_block(char type, std::string &par1, std::string par2 = nullptr);
 
 class Workflow_Parser {
 private:
-    struct Block {
-        int index;
-        Executor* block_n;
-    };
-    std::list<Block> blocks;
+    std::map<int, std::unique_ptr<Executor>> blocks;
     std::ifstream input;
     void listblocks_parser() {
         std::string new_str;
@@ -76,9 +74,9 @@ private:
             auto newstr_begin = std::sregex_iterator(new_str.begin(), new_str.end(), space_extractor);
             int iteration = 0;
             std::optional<int> block_number;
-            //int block_number;
             std::optional<char> type;
             std::optional<std::string> par1, par2;
+            par2.emplace("");
             for (auto i = newstr_begin; i != std::sregex_iterator(); ++i) {
                 if (iteration == 0)
                 {
@@ -123,30 +121,24 @@ private:
                     par2.emplace(str);
                     iteration++;
                 }
-                //std::cout << iteration << i -> str() << std::endl;
             }
-            //std::cout << par1 << par2;
-            Block b{};
             try {
                 if (!(type && block_number && par1)) {
                     throw "Not enough arguments";
                 }
-                b.index = *block_number;
-                b.block_n = create_block(*type, *par1, *par2);
-                auto iter = blocks.begin();
-                while (iter != blocks.end() && iter->index < b.index)
+                std::unique_ptr<Executor> temp_pointer (create_block(*type, *par1, *par2));
+                if (blocks[*block_number])
                 {
-                    ++iter;
+                    throw "Blocks can't be overloaded";
                 }
-                if (iter == blocks.begin()) {
-                    blocks.push_back(b);
-                }
-                else {
-                    blocks.insert(iter, b);
+                else
+                {
+
+                    blocks[*block_number] = std::move(temp_pointer);
                 }
             }
             catch (char* exception) {
-                std::cout << exception;
+                std::cout << std::endl;
             }
         }
     }
@@ -159,17 +151,13 @@ private:
             for (auto i = numbers_begin; i != std::sregex_iterator(); ++i) {
                 std::string id_number = i->str();
                 int id = std::atoi(id_number.c_str());
-                auto block_iter = blocks.begin();
-                while (block_iter != blocks.end()) {
-                    if (block_iter->index == id) {
-                        block_iter->block_n->execute(Text);
-                        break;
-                    }
-                    ++block_iter;
-                }
-                if (block_iter == blocks.end())
+                if (!blocks[id])
                 {
                     std::cout << "Haven't description for this index: " << id << std::endl;
+                }
+                else
+                {
+                    blocks[id]->execute(Text);
                 }
             }
         }
