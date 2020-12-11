@@ -137,19 +137,19 @@ void Dumper::execute(std::optional<std::vector<std::string>> &Text) {
 }
 
 
-Executor* create_block(char type, std::string &par1, std::string par2) {
+std::unique_ptr <Executor> create_block(char type, std::string &par1, std::string par2) {
     if (type == 'i') {
-        return new Reader(par1);
+        return std::make_unique<Reader>(par1);
     } else if (type == 'o') {
-        return new Writer(par1);
+        return std::make_unique<Writer>(par1);
     } else if (type == 'g') {
-        return new Greper(par1);
+        return std::make_unique<Greper>(par1);
     } else if (type == 'd') {
-        return new Dumper(par1);
+        return std::make_unique<Dumper>(par1);
     } else if (type == 's') {
-        return new Sorter();
+        return std::make_unique<Sorter>();
     } else if (type == 'r') {
-        return new Replacer(par1, par2);
+        return std::make_unique<Replacer>(par1, par2);
     } else
-        return new Executor;
+        return std::make_unique<Executor>();
 }
