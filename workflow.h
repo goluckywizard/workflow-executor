@@ -260,10 +260,10 @@ private:
 public:
     Workflow_Parser(char *workflow[], int argc) {
         if (argc > 2) {
-            /*if (strncmp(workflow[2], "-i", 2) == 0){
+            if (strncmp(workflow[2], "-i", 2) == 0){
                 hasAlternaiveInput = true;
                 alt_i = workflow[3];
-            }*/
+            }
             if (strncmp(workflow[2], "-o", 2) == 0){
                 hasAlternaiveOutput = true;
                 alt_o = workflow[3];
@@ -279,7 +279,6 @@ public:
                 alt_o = workflow[5];
             }
         }
-
         input.open(workflow[1]);
         blocks_parser();
         do_execute();
