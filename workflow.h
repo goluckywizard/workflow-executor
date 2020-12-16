@@ -8,6 +8,16 @@
 #include <optional>
 #include <memory>
 #include <map>
+class WorkflowException {
+public:
+    int Line_number;
+    std::string exception;
+    WorkflowException(int line, std::string ex) {
+        Line_number = line;
+        exception = ex;
+    }
+};
+
 class Option_text {
 public:
     bool isOpen = false;
@@ -26,53 +36,43 @@ public:
         altOutputName = filename;
     }
     void alt_read() {
-        try {
-            std::ifstream input;
-            input.open(altInputName);
-            if (!input.is_open()) {
-                throw "Alternative input file isn't exist's";
-            }
-            std::vector<std::string> vec;
-            //Text.emplace(vec);
-            std::string str;
-            while (std::getline(input, str))
-            {
-                text.push_back(str);
-            }
-            input.close();
-            isOpen = true;
-            wasAltInput = true;
+        std::ifstream input;
+        input.open(altInputName);
+        if (!input.is_open()) {
+            throw WorkflowException(42, "Alternative input file isn't exist's");
         }
-        catch (const char *exception) {
-            std::cout << exception;
+        std::vector<std::string> vec;
+        //Text.emplace(vec);
+        std::string str;
+        while (std::getline(input, str))
+        {
+            text.push_back(str);
         }
+        input.close();
+        isOpen = true;
+        wasAltInput = true;
     }
     void alt_write() {
-        try {
-            std::ofstream output;
-            output.open(altOutputName);
-            if (!output.is_open()) {
-                throw "Alternative output file isn't exist's";
-            }
-            for (const auto& iter : text)
-            {
-                output << iter << std::endl;
-            }
-            output.close();
-            text.clear();
-            isOpen = false;
-            wasAltOutput = true;
+        std::ofstream output;
+        output.open(altOutputName);
+        if (!output.is_open()) {
+            throw WorkflowException(59, "Alternative output file isn't exist's");
         }
-        catch (const char *exception) {
-            std::cout << exception;
+        for (const auto& iter : text)
+        {
+            output << iter << std::endl;
         }
+        output.close();
+        text.clear();
+        isOpen = false;
+        wasAltOutput = true;
     }
     std::vector<std::string> text;
 };
 
 class Executor {
 public:
-    virtual void execute(Option_text &Text){}
+    virtual void execute(Option_text &Text) = 0;
 };
 
 class Reader : public Executor {
@@ -118,7 +118,7 @@ public:
 };
 
 
-std::shared_ptr <Executor> create_block(char type, std::string &par1, std::string par2 = nullptr);
+std::shared_ptr <Executor> create_block(std::string type, std::string par1, std::string par2);
 
 class Workflow_Parser {
 private:
@@ -144,7 +144,7 @@ private:
             auto newstr_begin = std::sregex_iterator(new_str.begin(), new_str.end(), space_extractor);
             int iteration = 0;
             std::optional<int> block_number;
-            std::optional<char> type;
+            std::optional<std::string> type;
             std::optional<std::string> par1, par2;
             par2.emplace("");
             for (auto i = newstr_begin; i != std::sregex_iterator(); ++i) {
@@ -155,30 +155,7 @@ private:
                     iteration++;
                 } else if (iteration == 1) {
                     std::string str = i->str();
-                    if (str == "readfile")
-                    {
-                        type.emplace('i');
-                    }
-                    if (str == "writefile")
-                    {
-                        type.emplace('o');
-                    }
-                    if (str == "replace")
-                    {
-                        type.emplace('r');
-                    }
-                    if (str == "dump")
-                    {
-                        type.emplace('d');
-                    }
-                    if (str == "sort")
-                    {
-                        type.emplace('s');
-                    }
-                    if (str == "grep")
-                    {
-                        type.emplace('g');
-                    }
+                    type.emplace(str);
                     iteration++;
                 } else if (iteration == 2)
                 {
@@ -192,23 +169,18 @@ private:
                     iteration++;
                 }
             }
-            try {
-                if (!(type && block_number && par1)) {
-                    throw "Not enough arguments";
-                }
-                std::shared_ptr<Executor> temp_pointer (create_block(*type, *par1, *par2));
-                if (blocks[*block_number])
-                {
-                    throw "Blocks can't be overloaded";
-                }
-                else
-                {
-
-                    blocks[*block_number] = std::move(temp_pointer);
-                }
+            if (!(type && block_number)) {
+                throw WorkflowException(196, "Not enough arguments");
             }
-            catch (char* exception) {
-                std::cout << std::endl;
+            //std::string tymp = *type;
+            std::shared_ptr<Executor> temp_pointer (create_block(*type, *par1, *par2));
+            if (blocks[*block_number])
+            {
+                throw WorkflowException(201, "Blocks can't be overloaded");
+            }
+            else
+            {
+                blocks[*block_number] = std::move(temp_pointer);
             }
         }
         //std::string new_str;
@@ -220,18 +192,16 @@ private:
                 int id = std::atoi(id_number.c_str());
                 if (!blocks[id])
                 {
-                    std::cout << "Haven't description for this index: " << id << std::endl;
+                    throw WorkflowException(108,"Haven't description for this index: "+ std::to_string(id));
                 }
                 else
                 {
-                    //blocks[id]->execute(Text);
                     block_list.push_back(blocks[id]);
                 }
             }
         }
     }
     void do_execute() {
-
         Option_text text;
         if (hasAlternaiveInput) {
             text.hasAltInput = true;
@@ -251,11 +221,9 @@ private:
                 text.alt_write();
             }
             else {
-                std::cout << "Text aren't closed!";
+                throw WorkflowException(224, "Text aren't closed!");
             }
         }
-        //auto iter = block_list.begin();
-        //if (*iter )
     }
 public:
     Workflow_Parser(char *workflow[], int argc) {
