@@ -117,8 +117,7 @@ public:
     void execute(Option_text &Text) override;
 };
 
-
-std::shared_ptr <Executor> create_block(std::string type, std::string par1, std::string par2);
+std::shared_ptr <Executor> create_block(const std::optional<std::string>& type, const std::optional<std::string>& par1, const std::optional<std::string>& par2);
 
 class Workflow_Parser {
 private:
@@ -173,7 +172,7 @@ private:
                 throw WorkflowException(196, "Not enough arguments");
             }
             //std::string tymp = *type;
-            std::shared_ptr<Executor> temp_pointer (create_block(*type, *par1, *par2));
+            std::shared_ptr<Executor> temp_pointer (create_block(type, par1, par2));
             if (blocks[*block_number])
             {
                 throw WorkflowException(201, "Blocks can't be overloaded");
@@ -183,7 +182,6 @@ private:
                 blocks[*block_number] = std::move(temp_pointer);
             }
         }
-        //std::string new_str;
         while (std::getline(input, new_str)) {
             static const std::regex to_extractor("[\\d]+");
             auto numbers_begin = std::sregex_iterator(new_str.begin(), new_str.end(), to_extractor);
@@ -221,7 +219,7 @@ private:
                 text.alt_write();
             }
             else {
-                throw WorkflowException(224, "Text aren't closed!");
+                throw WorkflowException(223, "Text aren't closed!");
             }
         }
     }
