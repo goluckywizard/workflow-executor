@@ -121,19 +121,19 @@ void Dumper::execute(Option_text &Text) {
 }
 
 
-std::shared_ptr <Executor> create_block(std::string type, std::string par1, std::string par2) {
-    if (type == "readfile") {
-        return std::make_shared<Reader>(par1);
-    } else if (type == "writefile") {
-        return std::make_shared<Writer>(par1);
-    } else if (type == "grep") {
-        return std::make_shared<Greper>(par1);
-    } else if (type == "dump") {
-        return std::make_shared<Dumper>(par1);
-    } else if (type == "sort") {
+std::shared_ptr <Executor> create_block(const std::optional<std::string>& type, const std::optional<std::string>& par1, const std::optional<std::string>& par2) {
+    if (*type == "readfile") {
+        return std::make_shared<Reader>(*par1);
+    } else if (*type == "writefile") {
+        return std::make_shared<Writer>(*par1);
+    } else if (*type == "grep") {
+        return std::make_shared<Greper>(*par1);
+    } else if (*type == "dump") {
+        return std::make_shared<Dumper>(*par1);
+    } else if (*type == "sort") {
         return std::make_shared<Sorter>();
-    } else if (type == "replace") {
-        return std::make_shared<Replacer>(par1, par2);
+    } else if (*type == "replace") {
+        return std::make_shared<Replacer>(*par1, *par2);
     }
     else {
         throw WorkflowException(139, "Error with creating new block");
